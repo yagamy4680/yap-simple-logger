@@ -22,7 +22,7 @@ class SimpleLogger
   format-name: ->
     name = if @base-name? then "#{@module-name}::#{@base-name}" else "#{@module-name}"
     len = name.length
-    xs = [' ' for x from 1 to 16 - len ]
+    xs = [' ' for x from 1 to 24 - len ]
     return "#{name}#{xs.join ''}"
 
   log: (lv, err, message) ->
