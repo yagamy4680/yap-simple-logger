@@ -35,13 +35,21 @@ parse-filename = (filename) ->
       # E.g. /apps/sensor-web/lib/foo/bar/great.ls => name: 'bar', basename: 'great'
       return name: "...#{tokens[tokens.length - 2]}", basename: base-name
   else
-    return name: "??", basename: base-name unless y-module-dir? and filename.starts-with y-module-dir
-    filename = filename.substring y-module-dir.length
-    tokens = filename.split path.sep
-    # E.g. /externals/y-modules/sensorhub-client/lib/sensorhub-client.ls => name: 'sensorhub-client'
-    return name: tokens[1], basename: null if tokens[1] == base-name
-    # E.g. /externals/y-modules/sensorhub-client/lib/helper.ls => name: 'sensorhub-client', basename: 'helper'
-    return name: tokens[1], basename: base-name
+    if y-module-dir? and filename.starts-with y-module-dir
+      filename = filename.substring y-module-dir.length
+      tokens = filename.split path.sep
+      # E.g. /externals/y-modules/sensorhub-client/lib/sensorhub-client.ls => name: 'sensorhub-client'
+      return name: tokens[1], basename: null if tokens[1] == base-name
+      # E.g. /externals/y-modules/sensorhub-client/lib/helper.ls => name: 'sensorhub-client', basename: 'helper'
+      return name: tokens[1], basename: base-name
+    else
+      idx = filename.index-of 'yapps-plugins'
+      if idx >= 0
+        # E.g. /externals/yapps-plugins/communicator/lib/tcp.ls => name: 'communicator', basename: 'tcp'
+        tokens = filename.substring idx .split path.sep
+        return name: tokens[1], basename: base-name
+      else
+        return name: "??", basename: base-name unless idx >= 0
 
 
 
