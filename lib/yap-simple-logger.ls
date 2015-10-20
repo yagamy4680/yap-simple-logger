@@ -40,6 +40,8 @@ parse-filename = (filename) ->
       tokens = filename.split path.sep
       # E.g. /externals/y-modules/sensorhub-client/lib/sensorhub-client.ls => name: 'sensorhub-client'
       return name: tokens[1], basename: null if tokens[1] == base-name
+      # E.g. /externals/y-modules/yapps/lib/classes/web/index.ls => name: 'yapps', basename: 'web'
+      return name: tokens[1], basename: tokens[tokens.length - 2] if \index == base-name
       # E.g. /externals/y-modules/sensorhub-client/lib/helper.ls => name: 'sensorhub-client', basename: 'helper'
       return name: tokens[1], basename: base-name
     else
