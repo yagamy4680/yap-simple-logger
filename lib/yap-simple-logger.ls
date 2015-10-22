@@ -66,7 +66,8 @@ class ConsoleDriver extends Driver
 
   format-name: ->
     {paddings} = module
-    name = if @base-name? then "#{@module-name}::#{@base-name}" else "#{@module-name}"
+    {module-name, base-name} = @
+    name = if base-name? and base-name != module-name then "#{module-name}::#{base-name}" else "#{module-name}"
     len = name.length
     padding = if len <= 24 then paddings[24 - len] else ""
     return "#{name}#{padding}"
