@@ -78,8 +78,15 @@ class ConsoleDriver extends Driver
     level = log-levels[lv]
     now = moment! .format 'YYYY/MM/DD HH:mm:ss'
     prefix = "#{now.gray} #{name} [#{level.string}]"
-    console.error "#{prefix} #{err.stack}" if message?
-    console.error "#{prefix} #{msg}"
+    if message?
+      if err.stack?
+        console.error "#{prefix} #{err.stack}"
+        console.error "#{prefix} #{msg}"
+      else
+        exx = "#{err}"
+        console.error "#{prefix} err: #{exx.red} => #{msg}"
+    else
+      console.error "#{prefix} #{msg}"
 
   error: (err, message) -> return @.log \error, err, message
   info: (err, message) -> return @.log \info, err, message
