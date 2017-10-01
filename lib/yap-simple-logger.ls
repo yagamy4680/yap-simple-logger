@@ -4,14 +4,10 @@
 require! <[moment colors path]>
 
 log-levels =
-  \info :
-    string: \INFO .green
-  \debug :
-    string: 'DBG '.blue
-  \error :
-    string: 'ERR '.red
-  \warn :
-    string: \WARN .yellow
+  info : {string: 'INFO'.green }
+  debug: {string: 'DBG '.blue  }
+  error: {string: 'ERR '.red   }
+  warn : {string: 'WARN'.yellow}
 
 
 parse-filename = (filename) ->
@@ -45,14 +41,14 @@ parse-filename = (filename) ->
       # E.g. /externals/y-modules/sensorhub-client/lib/helper.ls => name: 'sensorhub-client', basename: 'helper'
       return name: tokens[1], basename: base-name
     else
-      idx = filename.index-of 'yapps-plugins'
-      if idx >= 0
-        # E.g. /externals/yapps-plugins/communicator/lib/tcp.ls => name: 'communicator', basename: 'tcp'
-        tokens = filename.substring idx .split path.sep
-        return name: tokens[1], basename: base-name
-      else
-        return name: "??", basename: base-name unless idx >= 0
-
+      # E.g. /externals/yapps-plugins/communicator/lib/tcp.ls => name: 'communicator', basename: 'tcp'
+      idx = filename.index-of '/yapps-plugins/'
+      # E.g. /profiles/[xxx]/plugins/echonet-lite-service/index.ls => name: 'echonet-lite-service', basename: 'index'
+      # E.g. /plugins/system-helpers/lib/regular-gc.ls             => name: 'system-helpers', basename: 'regular-gc'
+      idx = filename.index-of '/plugins/' if idx < 0
+      return name: "??", basename: base-name if idx < 0
+      tokens = filename.substring idx .split path.sep
+      return name: tokens[2], basename: base-name
 
 
 class Driver
@@ -62,6 +58,8 @@ class Driver
 
 class ConsoleDriver extends Driver
   (@module-name, @base-name) ->
+    @precise = process.env[\LOGGER_PRECISE_TIMESTAMP] is \true
+    @time-format = if @precise then 'MM/DD HH:mm:ss:SSS' else 'YYYY/MM/DD HH:mm:ss'
     return super module-name, base-name
 
   format-name: ->
@@ -69,17 +67,18 @@ class ConsoleDriver extends Driver
     {module-name, base-name} = @
     name = if base-name? and base-name != module-name then "#{module-name}::#{base-name}" else "#{module-name}"
     len = name.length
-    padding = if len <= 24 then paddings[24 - len] else ""
+    padding = if len <= 28 then paddings[28 - len] else ""
     return "#{name}#{padding}"
 
   log: (lv, err, message) ->
+    {time-format} = self = @
     name = @.format-name!
     msg = if message? then message else err
     level = log-levels[lv]
-    now = moment! .format 'YYYY/MM/DD HH:mm:ss'
+    now = moment! .format time-format
     prefix = "#{now.gray} #{name} [#{level.string}]"
     if message?
-      if err.stack?
+      if err? and err.stack?
         console.error "#{prefix} #{err.stack}"
         console.error "#{prefix} #{msg}"
       else
@@ -89,8 +88,8 @@ class ConsoleDriver extends Driver
       console.error "#{prefix} #{msg}"
 
   error: (err, message) -> return @.log \error, err, message
-  info: (err, message) -> return @.log \info, err, message
-  warn: (err, message) -> return @.log \warn, err, message
+  info : (err, message) -> return @.log \info , err, message
+  warn : (err, message) -> return @.log \warn , err, message
   debug: (err, message) -> return @.log \debug, err, message
 
 
@@ -104,12 +103,12 @@ class Logger
     @driver = new driver-class @module-name, @base-name
 
   debug: -> return @driver.debug.apply @driver, arguments unless global.argv?.v? and not global.argv.v
-  info: -> return @driver.info.apply @driver, arguments
-  warn: -> return @driver.warn.apply @driver, arguments
+  info : -> return @driver.info.apply  @driver, arguments
+  warn : -> return @driver.warn.apply  @driver, arguments
   error: -> return @driver.error.apply @driver, arguments
 
 
-module.paddings = [""] ++ [ ([ ' ' for y from 1 to x ]).join '' for x from 1 to 24 ]
+module.paddings = [""] ++ [ ([ ' ' for y from 1 to x ]).join '' for x from 1 to 28 ]
 module.loggers = []
 module.driver-class = ConsoleDriver
 
@@ -141,7 +140,7 @@ global.get-logger = (filename) ->
   loggers.push logger
   get = (logger, level) -> return -> logger[level].apply logger, arguments
   return
-    DBG: get logger, \debug
-    ERR: get logger, \error
+    DBG : get logger, \debug
+    ERR : get logger, \error
     WARN: get logger, \warn
     INFO: get logger, \info
