@@ -1,14 +1,7 @@
 #
 # Simple Logger
 #
-require! <[moment colors path]>
-
-log-levels =
-  info : {string: 'INFO'.green }
-  debug: {string: 'DBG '.blue  }
-  error: {string: 'ERR '.red   }
-  warn : {string: 'WARN'.yellow}
-
+require! <[path]>
 
 parse-filename = (filename) ->
   {app-dirname, app-filename, y-module-dir} = module
@@ -59,7 +52,7 @@ class Driver
 class ConsoleDriver extends Driver
   (@module-name, @base-name) ->
     @precise = process.env[\LOGGER_PRECISE_TIMESTAMP] is \true
-    @time-format = if @precise then 'MM/DD HH:mm:ss:SSS' else 'YYYY/MM/DD HH:mm:ss'
+    @timefmt = if @precise then 'MM/DD HH:mm:ss:SSS' else 'YYYY/MM/DD HH:mm:ss'
     return super module-name, base-name
 
   format-name: ->
@@ -71,11 +64,12 @@ class ConsoleDriver extends Driver
     return "#{name}#{padding}"
 
   log: (lv, err, message) ->
-    {time-format} = self = @
+    {timefmt} = self = @
+    {levels, moment} = module
     name = @.format-name!
     msg = if message? then message else err
-    level = log-levels[lv]
-    now = moment! .format time-format
+    level = levels[lv]
+    now = moment! .format timefmt
     prefix = "#{now.gray} #{name} [#{level.string}]"
     if message?
       if err? and err.stack?
@@ -112,17 +106,27 @@ module.paddings = [""] ++ [ ([ ' ' for y from 1 to x ]).join '' for x from 1 to 
 module.loggers = []
 module.driver-class = ConsoleDriver
 
+
 module.exports = exports =
-  init: (app-filename, yap-filename) ->
+  init: (app-filename, yap-filename, moment=null, colors=null) ->
+    colors = require \colors unless colors?
+    moment = require \moment unless moment?
+    module.colors = colors
+    module.moment = moment
+    module.levels =
+      info : {string: 'INFO'.green }
+      debug: {string: 'DBG '.blue  }
+      error: {string: 'ERR '.red   }
+      warn : {string: 'WARN'.yellow}
     module.app-filename = app-filename
     module.app-dirname = path.dirname app-filename
-    if yap-filename?
-      tokens = yap-filename.split path.sep
-      tokens.pop!
-      tokens.pop!
-      tokens.pop!
-      module.y-module-dir = tokens.join path.sep
-      console.error "y-module-dir = #{module.y-module-dir}"
+    return unless yap-filename?
+    tokens = yap-filename.split path.sep
+    tokens.pop!
+    tokens.pop!
+    tokens.pop!
+    module.y-module-dir = tokens.join path.sep
+    console.error "y-module-dir = #{module.y-module-dir}"
 
   set-driver-class: (driver-class) ->
     console.error "set-driver-class"
@@ -139,8 +143,8 @@ global.get-logger = (filename) ->
   logger = new Logger name, basename, driver-class
   loggers.push logger
   get = (logger, level) -> return -> logger[level].apply logger, arguments
-  return
-    DBG : get logger, \debug
-    ERR : get logger, \error
-    WARN: get logger, \warn
-    INFO: get logger, \info
+  DBG = get logger, \debug
+  ERR = get logger, \error
+  WARN = get logger, \warn
+  INFO = get logger, \info
+  return {DBG, ERR, WARN, INFO}
