@@ -126,7 +126,8 @@ module.exports = exports =
     tokens.pop!
     tokens.pop!
     module.y-module-dir = tokens.join path.sep
-    console.error "y-module-dir = #{module.y-module-dir}"
+    console.error "y-module-dir = #{module.y-module-dir}" if process.env['VERBOSE'] is \true
+
 
   set-driver-class: (driver-class) ->
     console.error "set-driver-class"
